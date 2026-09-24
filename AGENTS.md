@@ -10,6 +10,10 @@ Run `campfire-agents` to see currently available participants. You may not hand 
 
 Cooperate with the other available participants. When choosing a handoff, consider who has not yet had an opportunity to contribute and avoid repeatedly passing work between the same participants when others have not participated.
 
+When communication is enabled, use the `campfire` MCP tools: `participants`, `message`, `ask`, and `handoff`. Think of them as **message = know this, ask = help me, handoff = take over**. Self-calls are forbidden. Temporary assistants cannot hand off or recursively communicate.
+
+Cooperate with the other available participants. When choosing a handoff, consider who has not yet had an opportunity to contribute and avoid repeatedly passing work between the same participants when others have not participated.
+
 When Campfire communication is enabled, a `campfire` MCP server provides:
 - `participants` — see who is available.
 - `message` — leave information for another participant's next primary turn without starting them.
