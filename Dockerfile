@@ -13,7 +13,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     ca-certificates curl git jq python3 python3-pip nodejs npm tini coreutils \
     && rm -rf /var/lib/apt/lists/*
 
-RUN npm install -g @openai/codex @anthropic-ai/claude-code @google/gemini-cli @moonshot-ai/kimi-code || true
+RUN npm install -g @openai/codex @anthropic-ai/claude-code @google/gemini-cli @moonshot-ai/kimi-code @xai-official/grok || true
+
+RUN curl -fsSL https://dev.meta.ai/install.sh | bash || true
 
 RUN useradd --create-home --uid 1000 --shell /bin/bash campfire \
     && mkdir -p /opt/campfire/agents /opt/campfire/defaults /opt/campfire/templates \
