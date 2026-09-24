@@ -33,7 +33,7 @@ COPY lib/lib.sh /opt/campfire/lib.sh
 COPY agents/ /opt/campfire/agents/
 COPY mcp/server.mjs /opt/campfire/mcp/server.mjs
 COPY mcp/providers/ /opt/campfire/mcp/providers/
-COPY templates/CAMPFIRE_AGENTS.md /opt/campfire/templates/CAMPFIRE_AGENTS.md
+COPY templates/INTERNAL_AGENT_INSTRUCTIONS.md /opt/campfire/templates/INTERNAL_AGENT_INSTRUCTIONS.md
 COPY research/README.md /opt/campfire/defaults/README.md
 COPY bin/campfire-agents /usr/local/bin/campfire-agents
 COPY bin/campfire-assist /usr/local/bin/campfire-assist
@@ -43,7 +43,7 @@ COPY controller.sh /usr/local/bin/campfire-controller
 RUN chmod 0555 /opt/campfire/lib.sh /opt/campfire/agents/*.sh \
         /usr/local/bin/campfire-agents /usr/local/bin/campfire-assist \
         /usr/local/bin/campfire-configure-mcp /usr/local/bin/campfire-controller \
-    && chmod 0444 /opt/campfire/templates/CAMPFIRE_AGENTS.md \
+    && chmod 0444 /opt/campfire/templates/INTERNAL_AGENT_INSTRUCTIONS.md \
         /opt/campfire/defaults/README.md /opt/campfire/mcp/providers/*
 
 USER campfire
