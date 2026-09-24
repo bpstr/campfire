@@ -5,6 +5,7 @@ source /opt/campfire/lib.sh
 MAX_TURNS="${CAMPFIRE_MAX_TURNS:-100}"
 TURN_TIMEOUT="${CAMPFIRE_TURN_TIMEOUT:-1800}"
 UNAVAILABLE_POLICY="${CAMPFIRE_UNAVAILABLE_POLICY:-fallback}"
+WAIT_SECONDS="${CAMPFIRE_WAIT_SECONDS:-900}"
 
 mkdir -p /var/log/campfire/runs /var/log/campfire/handoffs "$HOME/.campfire"
 [[ -f "$HOME/AGENTS.md" ]] || cp /opt/campfire/defaults/AGENTS.md "$HOME/AGENTS.md"
@@ -39,6 +40,14 @@ while (( turn <= MAX_TURNS )); do
 
   if (( status != 0 )) && looks_temporarily_unavailable "$run_log"; then
     log_event participant.unavailable agent "$current" reason temporary_provider_limit
+
+    if [[ "$UNAVAILABLE_POLICY" == wait ]]; then
+      log_event participant.waiting agent "$current" seconds "$WAIT_SECONDS"
+      sleep "$WAIT_SECONDS"
+      log_event participant.retry agent "$current"
+      continue
+    fi
+
     [[ "$UNAVAILABLE_POLICY" == fallback ]] || exit "$status"
     next="$(choose_first_available "$current")"
     [[ -n "$next" ]] || exit "$status"
@@ -58,6 +67,14 @@ while (( turn <= MAX_TURNS )); do
 
   if ! is_available_name "$target"; then
     log_event handoff.unavailable run "$run_id" requested "$target"
+
+    if [[ "$UNAVAILABLE_POLICY" == wait ]]; then
+      log_event participant.waiting agent "$target" seconds "$WAIT_SECONDS"
+      sleep "$WAIT_SECONDS"
+      current="$target"
+      continue
+    fi
+
     [[ "$UNAVAILABLE_POLICY" == fallback ]] || exit 7
     next="$(choose_first_available "$current")"
     [[ -n "$next" ]] || exit 7
