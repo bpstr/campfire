@@ -21,7 +21,7 @@ RUN npm install -g @openai/codex @anthropic-ai/claude-code @google/gemini-cli @m
 # its adapter is executable.
 
 RUN useradd --create-home --uid 1000 --shell /bin/bash campfire \
-    && mkdir -p /opt/campfire/agents /opt/campfire/defaults /var/log/campfire \
+    && mkdir -p /opt/campfire/agents /opt/campfire/defaults /opt/campfire/templates /var/log/campfire \
         /home/campfire/.codex /home/campfire/.claude /home/campfire/.gemini \
         /home/campfire/.grok /home/campfire/.kimi-code \
         /home/campfire/.config /home/campfire/.local/share \
@@ -30,14 +30,14 @@ RUN useradd --create-home --uid 1000 --shell /bin/bash campfire \
 
 COPY lib/lib.sh /opt/campfire/lib.sh\nCOPY mcp/server.mjs /opt/campfire/mcp/server.mjs\nCOPY mcp/campfire-mcp.json /opt/campfire/mcp/campfire-mcp.json\nCOPY bin/campfire-assist /usr/local/bin/campfire-assist
 COPY agents/ /opt/campfire/agents/
-COPY AGENTS.md /opt/campfire/defaults/AGENTS.md
+COPY templates/CAMPFIRE_AGENTS.md /opt/campfire/templates/CAMPFIRE_AGENTS.md
 COPY research/README.md /opt/campfire/defaults/README.md
 COPY bin/campfire-agents /usr/local/bin/campfire-agents
 COPY controller.sh /usr/local/bin/campfire-controller
 
 RUN chmod 0555 /opt/campfire/lib.sh /opt/campfire/agents/*.sh \
     /usr/local/bin/campfire-agents /usr/local/bin/campfire-controller \
-    && chmod 0444 /opt/campfire/defaults/AGENTS.md /opt/campfire/defaults/README.md
+    && chmod 0444 /opt/campfire/templates/CAMPFIRE_AGENTS.md /opt/campfire/defaults/README.md
 
 USER campfire
 WORKDIR /home/campfire
