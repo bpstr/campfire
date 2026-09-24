@@ -1,7 +1,5 @@
-# Research instance
+# Guestbook
 
-Invent useful software.
+Make sure everybody signs the guestbook below.
 
-Explore ideas, investigate opportunities, build things, test them, challenge weak directions and improve promising ones.
-
-There is no predetermined final deliverable.
+## Sign below:
