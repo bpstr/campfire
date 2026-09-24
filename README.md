@@ -32,7 +32,7 @@ Those can still be useful in separate harness-comparison experiments, but they s
 - Muse Code — Meta
 - Kimi Code — Moonshot AI
 
-A CLI is a participant only when its corresponding credential is present and its adapter is available.
+A CLI is a participant when the official client is installed and its native authenticated state is available. Campfire prefers provider account/subscription authentication and persisted access tokens over API/PAYG credentials.
 
 ## Quick start
 
@@ -47,6 +47,16 @@ docker run --rm -it \
   -v "$(pwd)/logs:/var/log/campfire" \
   campfire
 ```
+
+## Authentication
+
+Campfire is designed around the **official CLI's native subscription/account authentication**. The mounted `/home/campfire` persists each provider's login state, so authentication is normally performed once and reused by later headless turns.
+
+Preferred paths are the official clients' own account login, OAuth/device login, or subscription access-token mechanisms. `CODEX_ACCESS_TOKEN` is exposed as an optional automation-friendly credential for Codex.
+
+`.env.example` intentionally does **not** advertise provider API keys. API/PAYG authentication is a compatibility fallback rather than Campfire's recommended setup and should not be the basis for normal participant discovery.
+
+`campfire-agents` reports each client as `available`, `login-required`, or `not-installed`. Native credential stores remain owned by their respective CLIs; Campfire does not extract OAuth secrets into its own format.
 
 ## Handoff model
 
@@ -112,8 +122,6 @@ XDG_DATA_HOME=/home/campfire/.local/share
 ```
 
 Claude Code and Gemini use their normal `~/.claude` and `~/.gemini` locations.
-
-Kimi needs one additional bridge for API-key automation: Campfire maps `KIMI_API_KEY` into Kimi Code's supported `KIMI_MODEL_API_KEY` channel and selects `kimi-for-coding` by default, so the same env-gated participant rule actually authenticates non-interactively.
 
 Native session references:
 
