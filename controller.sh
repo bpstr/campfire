@@ -7,7 +7,7 @@ TURN_TIMEOUT="${CAMPFIRE_TURN_TIMEOUT:-1800}"
 UNAVAILABLE_POLICY="${CAMPFIRE_UNAVAILABLE_POLICY:-fallback}"
 WAIT_SECONDS="${CAMPFIRE_WAIT_SECONDS:-900}"
 
-mkdir -p /var/log/campfire/runs /var/log/campfire/handoffs /var/log/campfire/threads "$HOME/.campfire"
+mkdir -p /var/log/campfire/runs /var/log/campfire/handoffs "$HOME/.campfire"
 [[ -f "$HOME/AGENTS.md" ]] || cp /opt/campfire/defaults/AGENTS.md "$HOME/AGENTS.md"
 [[ -f "$HOME/README.md" ]] || cp /opt/campfire/defaults/README.md "$HOME/README.md"
 
@@ -23,9 +23,6 @@ while (( MAX_TURNS <= 0 || turn <= MAX_TURNS )); do
   handoff="$HOME/.campfire/handoff"; rm -f "$handoff"
   run_id="$(printf '%06d-%s' "$turn" "$current")"
   run_log="/var/log/campfire/runs/$run_id.log"
-  thread_dir="/var/log/campfire/threads/$current"
-  thread_file="$thread_dir/thread.txt"
-  mkdir -p "$thread_dir"
 
   export CAMPFIRE_CURRENT_AGENT="$current" CAMPFIRE_HANDOFF="$handoff"
   log_event run.started run "$run_id" agent "$current"
@@ -35,12 +32,12 @@ while (( MAX_TURNS <= 0 || turn <= MAX_TURNS )); do
   } >> "$thread_file"
 
   set +e
-  timeout --signal=TERM --kill-after=15 "$TURN_TIMEOUT" "$adapter" 2>&1 | tee "$run_log" | tee -a "$thread_file"
+  timeout --signal=TERM --kill-after=15 "$TURN_TIMEOUT" "$adapter" 2>&1 | tee "$run_log"
   status=${PIPESTATUS[0]}
   set -e
 
   printf '===== %s | status=%s | END =====\n' "$run_id" "$status" >> "$thread_file"
-  log_event run.finished run "$run_id" agent "$current" status "$status" thread "$thread_file"
+  log_event run.finished run "$run_id" agent "$current" status "$status"
 
   if (( status != 0 )) && looks_temporarily_unavailable "$run_log"; then
     log_event participant.unavailable agent "$current" reason temporary_provider_limit
