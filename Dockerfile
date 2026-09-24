@@ -3,12 +3,17 @@ FROM ubuntu:24.04
 ENV DEBIAN_FRONTEND=noninteractive
 ENV HOME=/home/campfire
 ENV PATH=/home/campfire/.local/bin:/usr/local/bin:/usr/bin:/bin
+ENV CODEX_HOME=/home/campfire/.codex
+ENV GROK_HOME=/home/campfire/.grok
+ENV KIMI_CODE_HOME=/home/campfire/.kimi-code
+ENV XDG_CONFIG_HOME=/home/campfire/.config
+ENV XDG_DATA_HOME=/home/campfire/.local/share
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     ca-certificates curl git jq python3 python3-pip nodejs npm tini coreutils \
     && rm -rf /var/lib/apt/lists/*
 
-RUN npm install -g @openai/codex @anthropic-ai/claude-code @google/gemini-cli || true
+RUN npm install -g @openai/codex @anthropic-ai/claude-code @google/gemini-cli @moonshot-ai/kimi-code || true
 
 # Grok, Muse and Kimi installation paths are intentionally kept separate from
 # Campfire's controller. Add/pin their supported installers here as needed.
@@ -17,6 +22,9 @@ RUN npm install -g @openai/codex @anthropic-ai/claude-code @google/gemini-cli ||
 
 RUN useradd --create-home --uid 1000 --shell /bin/bash campfire \
     && mkdir -p /opt/campfire/agents /opt/campfire/defaults /var/log/campfire \
+        /home/campfire/.codex /home/campfire/.claude /home/campfire/.gemini \
+        /home/campfire/.grok /home/campfire/.kimi-code \
+        /home/campfire/.config /home/campfire/.local/share \
     && chown -R root:root /opt/campfire \
     && chown -R campfire:campfire /home/campfire /var/log/campfire
 
