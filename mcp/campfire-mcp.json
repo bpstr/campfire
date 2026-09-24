@@ -1,0 +1,14 @@
+{
+  "mcpServers": {
+    "campfire": {
+      "command": "node",
+      "args": ["/opt/campfire/mcp/server.mjs"],
+      "env": {
+        "CAMPFIRE_COMMUNICATION_ENABLED": "${CAMPFIRE_COMMUNICATION_ENABLED}",
+        "CAMPFIRE_CURRENT_AGENT": "${CAMPFIRE_CURRENT_AGENT}",
+        "CAMPFIRE_HANDOFF": "${CAMPFIRE_HANDOFF}",
+        "CAMPFIRE_RUN_ID": "${CAMPFIRE_RUN_ID}"
+      }
+    }
+  }
+}
