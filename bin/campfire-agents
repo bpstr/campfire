@@ -2,9 +2,13 @@
 set -euo pipefail
 source /opt/campfire/lib.sh
 current="${CAMPFIRE_CURRENT_AGENT:-}"
-while IFS='|' read -r name env_var adapter; do
-  if participant_enabled "$env_var" && participant_installed "$adapter"; then
+while IFS='|' read -r name adapter; do
+  if participant_enabled "$name" "$adapter"; then
     [[ "$name" == "$current" ]] && state=self || state=available
-    printf '%-10s %s\n' "$name" "$state"
+  elif participant_installed "$adapter"; then
+    state=login-required
+  else
+    state=not-installed
   fi
+  printf '%-10s %s\n' "$name" "$state"
 done < <(participant_registry)
