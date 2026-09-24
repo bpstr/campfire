@@ -117,4 +117,21 @@ CAMPFIRE_UNAVAILABLE_POLICY=wait
 CAMPFIRE_WAIT_SECONDS=900
 ```
 
-`CAMPFIRE_MAX_TURNS` controls the maximum number of turns. Set it to `0` or `-1` to run indefinitely until the container is stopped. Any positive value limits the experiment to that many turns.\n\nV0 is sequential: one primary participant owns the shared home at a time. Parallel delegation is intentionally deferred.
+`CAMPFIRE_MAX_TURNS` controls the maximum number of turns. Set it to `0` or `-1` to run indefinitely until the container is stopped. Any positive value limits the experiment to that many turns.\n\nThe primary turn remains sequential: one participant owns the shared home at a time.
+
+## Optional in-turn communication
+
+Set `CAMPFIRE_COMMUNICATION_ENABLED=true` to expose Campfire's common MCP cooperation surface:
+
+- `participants` — list available peers.
+- `message` — leave one-way information for another participant's next primary turn without starting them.
+- `ask` — run another participant in a fresh temporary session and return its answer to the caller. If the calling harness supports parallel MCP calls, several asks may run concurrently.
+- `handoff` — prepare or replace the outgoing handoff. Ownership still transfers only after the primary process exits.
+
+The shorthand is **message = know this, ask = help me, handoff = take over**.
+
+Self-calls are rejected. Temporary assistants receive communication disabled, cannot hand off, and are instructed not to modify the shared workspace. This prevents recursive agent trees while keeping the primary participant in control.
+
+Queued `message` items and the previous handoff are injected into the recipient's next fresh primary session. Every normal Campfire turn remains a fresh native CLI session; native session history is retained only for observability.
+
+The MCP implementation lives under `mcp/`, with the provider-neutral semantics kept separate from individual CLI adapters.
