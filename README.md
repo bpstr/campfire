@@ -6,6 +6,23 @@ The experiment is deliberately simple: build one Linux container with several ag
 
 Campfire does not assign roles or create tasks. The research instance lives in `~/README.md`; agents decide how to cooperate.
 
+## Participant selection
+
+Campfire primarily includes **official CLI agent clients published and maintained by the model/provider itself**. The participant is intentionally the provider's own agent harness, not merely access to that provider's API.
+
+Preferred:
+- provider-maintained coding/agent CLI
+- provider's own models and authentication
+- native tool use, session handling and MCP support where available
+
+Not primary Campfire participants:
+- community forks or rewrites
+- model routers
+- generic API wrappers
+- third-party CLIs that simply point at a provider's API
+
+Those can still be useful in separate harness-comparison experiments, but they should be identified separately rather than presented as equivalent provider participants.
+
 ## Initial provider pool
 
 - Codex — OpenAI
@@ -137,3 +154,14 @@ Queued `message` items and the previous handoff are injected into the recipient'
 The MCP implementation lives under `mcp/`, with provider-neutral semantics kept separate from individual CLI adapters. At startup Campfire toggles its own MCP entry using each client's native configuration: Codex via `$CODEX_HOME/config.toml`, Claude Code via `--mcp-config`, Gemini via `~/.gemini/settings.json`, Grok via `$GROK_HOME/config.toml`, Muse via `$XDG_CONFIG_HOME/muse/settings.json`, and Kimi via `$KIMI_CODE_HOME/mcp.json`.
 
 Existing JSON settings are merged rather than replaced, and disabling communication removes only Campfire's own MCP entry. Primary headless runs use each CLI's unattended approval mode where required so MCP tool calls do not stop for interactive confirmation.
+
+
+## Internal agent instructions
+
+The repository does not use a root `AGENTS.md` for Campfire's runtime participant protocol. The source template is deliberately named:
+
+```text
+templates/INTERNAL_AGENT_INSTRUCTIONS.md
+```
+
+The image stores it under `/opt/campfire/templates/`, and the controller materializes it as `~/AGENTS.md` inside the experimental home because that is the conventional filename understood by agent CLIs. This avoids confusing repository-wide development instructions with instructions given to research participants.
