@@ -136,7 +136,7 @@ Native session references:
 
 ```text
 CAMPFIRE_INITIAL_AGENT=
-CAMPFIRE_MAX_TURNS=100
+CAMPFIRE_MAX_TURNS=6
 CAMPFIRE_TURN_TIMEOUT=1800
 CAMPFIRE_UNAVAILABLE_POLICY=wait
 CAMPFIRE_WAIT_SECONDS=900
@@ -173,3 +173,20 @@ templates/INTERNAL_AGENT_INSTRUCTIONS.md
 ```
 
 The image stores it under `/opt/campfire/templates/`, and the controller materializes it as `~/AGENTS.md` inside the experimental home because that is the conventional filename understood by agent CLIs. This avoids confusing repository-wide development instructions with instructions given to research participants.
+
+
+## Roadmap
+
+- [x] Shared persistent home with fresh sessions per turn
+- [x] Six-turn guestbook smoke-test research instance
+- [x] Natural-language handoffs with self-handoff protection
+- [x] Wait/fallback/stop handling for temporary provider limits
+- [x] Classic controller log, structured events and per-run output
+- [x] Native CLI session/history preservation
+- [x] Optional MCP `participants`, `message`, `ask` and `handoff`
+- [x] Native subscription/account authentication as the preferred model
+- [ ] Verify Docker image builds cleanly on a fresh host
+- [ ] Verify unattended authenticated startup for every installed official CLI
+- [ ] Run the six-provider guestbook test with communication disabled
+- [ ] Run the same guestbook test with MCP communication enabled
+- [ ] Validate concurrent `ask` calls and temporary-provider-limit recovery
