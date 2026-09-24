@@ -13,7 +13,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     ca-certificates curl git jq python3 python3-pip nodejs npm tini coreutils \
     && rm -rf /var/lib/apt/lists/*
 
-RUN npm install -g @openai/codex @anthropic-ai/claude-code @google/gemini-cli @moonshot-ai/kimi-code || true
+RUN npm install -g @openai/codex @anthropic-ai/claude-code @google/gemini-cli @moonshot-ai/kimi-code || true\n\nCOPY mcp/package.json /opt/campfire/mcp/package.json\nRUN cd /opt/campfire/mcp && npm install --omit=dev
 
 # Grok, Muse and Kimi installation paths are intentionally kept separate from
 # Campfire's controller. Add/pin their supported installers here as needed.
@@ -28,7 +28,7 @@ RUN useradd --create-home --uid 1000 --shell /bin/bash campfire \
     && chown -R root:root /opt/campfire \
     && chown -R campfire:campfire /home/campfire /var/log/campfire
 
-COPY lib/lib.sh /opt/campfire/lib.sh
+COPY lib/lib.sh /opt/campfire/lib.sh\nCOPY mcp/server.mjs /opt/campfire/mcp/server.mjs\nCOPY mcp/campfire-mcp.json /opt/campfire/mcp/campfire-mcp.json\nCOPY bin/campfire-assist /usr/local/bin/campfire-assist
 COPY agents/ /opt/campfire/agents/
 COPY AGENTS.md /opt/campfire/defaults/AGENTS.md
 COPY research/README.md /opt/campfire/defaults/README.md
