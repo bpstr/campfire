@@ -1,29 +1,33 @@
 #!/usr/bin/env bash
 set -euo pipefail
-
-enabled="${CAMPFIRE_COMMUNICATION_ENABLED:-false}"
-case "$enabled" in
+case "${CAMPFIRE_COMMUNICATION_ENABLED:-false}" in
   1|true|TRUE|yes|YES|on|ON) ;;
   *) exit 0 ;;
 esac
 
 mkdir -p "$CODEX_HOME" "$HOME/.gemini" "$GROK_HOME" "$KIMI_CODE_HOME" "$XDG_CONFIG_HOME/muse"
 
-# Campfire owns only these generated MCP entries inside its disposable/persistent
-# research home. Provider-native session/history files remain untouched.
-cp /opt/campfire/mcp/providers/gemini.json "$HOME/.gemini/settings.json"
+# Merge Campfire into JSON settings without deleting unrelated user settings.
+tmp="$(mktemp)"
+if [[ -f "$HOME/.gemini/settings.json" ]]; then
+  jq -s '.[0] * .[1]' "$HOME/.gemini/settings.json" /opt/campfire/mcp/providers/gemini.json > "$tmp"
+else
+  cp /opt/campfire/mcp/providers/gemini.json "$tmp"
+fi
+mv "$tmp" "$HOME/.gemini/settings.json"
+
+tmp="$(mktemp)"
+if [[ -f "$XDG_CONFIG_HOME/muse/settings.json" ]]; then
+  jq -s '.[0] * .[1]' "$XDG_CONFIG_HOME/muse/settings.json" /opt/campfire/mcp/providers/muse.json > "$tmp"
+else
+  cp /opt/campfire/mcp/providers/muse.json "$tmp"
+fi
+mv "$tmp" "$XDG_CONFIG_HOME/muse/settings.json"
+
+# Kimi has a dedicated MCP declaration file.
 cp /opt/campfire/mcp/providers/kimi.json "$KIMI_CODE_HOME/mcp.json"
 
-# Grok and Muse use their documented user settings locations.
-cp /opt/campfire/mcp/providers/grok.toml "$GROK_HOME/config.toml"
-cp /opt/campfire/mcp/providers/muse.json "$XDG_CONFIG_HOME/muse/settings.json"
-
-# Codex config can contain unrelated settings. Add the Campfire server only once.
-touch "$CODEX_HOME/config.toml"
-if ! grep -q '^\[mcp_servers\.campfire\]' "$CODEX_HOME/config.toml"; then
-  printf '\n' >> "$CODEX_HOME/config.toml"
-  cat /opt/campfire/mcp/providers/codex.toml >> "$CODEX_HOME/config.toml"
-fi
-
-# Claude supports an explicit MCP config per invocation; its adapter points at
-# /opt/campfire/mcp/providers/claude.json rather than mutating Claude state.
+# TOML-backed clients: append Campfire only when it is not already declared.
+touch "$CODEX_HOME/config.toml" "$GROK_HOME/config.toml"
+grep -q '^\[mcp_servers\.campfire\]' "$CODEX_HOME/config.toml" || { printf '\n' >> "$CODEX_HOME/config.toml"; cat /opt/campfire/mcp/providers/codex.toml >> "$CODEX_HOME/config.toml"; }
+grep -q '^\[mcp_servers\.campfire\]' "$GROK_HOME/config.toml" || { printf '\n' >> "$GROK_HOME/config.toml"; cat /opt/campfire/mcp/providers/grok.toml >> "$GROK_HOME/config.toml"; }
