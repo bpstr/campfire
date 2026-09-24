@@ -1,0 +1,19 @@
+#!/usr/bin/env bash
+set -euo pipefail
+source /opt/campfire/lib.sh
+target="$1"
+request="$2"
+[[ "$target" != "${CAMPFIRE_CURRENT_AGENT:-}" ]] || { echo "Self calls are forbidden." >&2; exit 9; }
+adapter="$(participant_adapter "$target" || true)"
+[[ -n "$adapter" ]] || { echo "Participant unavailable: $target" >&2; exit 10; }
+
+assist_root="/tmp/campfire-assist-${CAMPFIRE_RUN_ID:-run}-$$"
+mkdir -p "$assist_root"
+export CAMPFIRE_CURRENT_AGENT="$target"
+export CAMPFIRE_HANDOFF="$assist_root/disabled-handoff"
+export CAMPFIRE_COMMUNICATION_ENABLED=false
+export CAMPFIRE_ASSISTANT_MODE=1
+export CAMPFIRE_ASSIST_REQUEST="$request"
+
+# Adapters detect assistant mode and receive this request as their fresh-session prompt.
+exec "$adapter"
