@@ -67,7 +67,7 @@ Policies:
     └── ...
 ```
 
-Campfire stores raw stdout/stderr for every invocation under `runs/` and the structured controller timeline in `events.jsonl`.
+Campfire stores raw stdout/stderr for every invocation under `runs/` and the structured controller timeline in `events.jsonl`. `controller.log` is the classic plaintext operational journal intended for humans and infrastructure debugging. It records lifecycle transitions such as `PREPARED`, `STARTING`, `RUNNING`, `FINISHING`, `FINISHED`, handoff acceptance, waits, fallbacks and provider failures. This makes it possible to distinguish, for example, a turn that was prepared but never launched from one whose CLI process actually ran.
 
 ### Native threads and sessions
 
