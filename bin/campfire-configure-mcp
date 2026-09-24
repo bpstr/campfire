@@ -1,0 +1,29 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+enabled="${CAMPFIRE_COMMUNICATION_ENABLED:-false}"
+case "$enabled" in
+  1|true|TRUE|yes|YES|on|ON) ;;
+  *) exit 0 ;;
+esac
+
+mkdir -p "$CODEX_HOME" "$HOME/.gemini" "$GROK_HOME" "$KIMI_CODE_HOME" "$XDG_CONFIG_HOME/muse"
+
+# Campfire owns only these generated MCP entries inside its disposable/persistent
+# research home. Provider-native session/history files remain untouched.
+cp /opt/campfire/mcp/providers/gemini.json "$HOME/.gemini/settings.json"
+cp /opt/campfire/mcp/providers/kimi.json "$KIMI_CODE_HOME/mcp.json"
+
+# Grok and Muse use their documented user settings locations.
+cp /opt/campfire/mcp/providers/grok.toml "$GROK_HOME/config.toml"
+cp /opt/campfire/mcp/providers/muse.json "$XDG_CONFIG_HOME/muse/settings.json"
+
+# Codex config can contain unrelated settings. Add the Campfire server only once.
+touch "$CODEX_HOME/config.toml"
+if ! grep -q '^\[mcp_servers\.campfire\]' "$CODEX_HOME/config.toml"; then
+  printf '\n' >> "$CODEX_HOME/config.toml"
+  cat /opt/campfire/mcp/providers/codex.toml >> "$CODEX_HOME/config.toml"
+fi
+
+# Claude supports an explicit MCP config per invocation; its adapter points at
+# /opt/campfire/mcp/providers/claude.json rather than mutating Claude state.
