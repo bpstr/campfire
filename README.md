@@ -2,15 +2,7 @@
 
 Campfire is a small research environment for autonomous cooperation between independent CLI agents.
 
-The experiment is deliberately simple:
-
-1. Build one Linux container with several agent CLIs.
-2. Expose provider credentials at runtime.
-3. Treat the agent user's home directory as the shared research workspace.
-4. Give every participant the same `AGENTS.md`.
-5. Run one participant at a time.
-6. At the end of a turn, the participant leaves a natural-language handoff for another participant.
-7. Record runs, handoffs, failures and routing decisions.
+The experiment is deliberately simple: build one Linux container with several agent CLIs, expose provider credentials at runtime, use the agent user's home as the shared workspace, give every participant the same `AGENTS.md`, run one participant at a time, hand work naturally to another participant, and record the experiment.
 
 Campfire does not assign roles or create tasks. The research instance lives in `~/README.md`; agents decide how to cooperate.
 
@@ -23,14 +15,12 @@ Campfire does not assign roles or create tasks. The research instance lives in `
 - Muse Code — Meta
 - Kimi Code — Moonshot AI
 
-A CLI is a participant only when its corresponding credential is present and its adapter is available. Missing credentials simply remove that CLI from the pool.
+A CLI is a participant only when its corresponding credential is present and its adapter is available.
 
 ## Quick start
 
 ```bash
 cp .env.example .env
-# Add credentials only for agents you want to participate.
-
 docker build -t campfire .
 mkdir -p workspace logs
 
@@ -40,8 +30,6 @@ docker run --rm -it \
   -v "$(pwd)/logs:/var/log/campfire" \
   campfire
 ```
-
-On first start Campfire copies the default `AGENTS.md` and research `README.md` into the shared home if they do not exist.
 
 ## Handoff model
 
@@ -57,8 +45,6 @@ The handoff becomes effective only after process exit. Self-handoffs are rejecte
 
 ## Temporary unavailability
 
-Quota failures, rate limits and temporary outages do not count as successful turns.
-
 ```text
 CAMPFIRE_UNAVAILABLE_POLICY=wait
 CAMPFIRE_WAIT_SECONDS=900
@@ -66,11 +52,9 @@ CAMPFIRE_WAIT_SECONDS=900
 
 Policies:
 
-- `wait` — keep the experiment alive, sleep for the configured interval, then retry the requested participant. This preserves the intended cooperation path across temporary quota or provider outages.
-- `fallback` — continue with another available participant. Requested and executed recipients are logged separately.
-- `stop` — stop the experiment and preserve state.
-
-`wait` is useful for long-running Docker experiments where leaving the container idle is inexpensive. The default retry interval is 15 minutes.
+- `wait` — keep the experiment alive, sleep, then retry the requested participant.
+- `fallback` — continue with another available participant.
+- `stop` — stop and preserve state.
 
 ## Observability
 
@@ -78,10 +62,25 @@ Policies:
 /var/log/campfire/
 ├── events.jsonl
 ├── handoffs/
-└── runs/
+├── runs/
+│   ├── 000001-codex.log
+│   └── ...
+└── threads/
+    ├── codex/thread.txt
+    ├── claude/thread.txt
+    ├── gemini/thread.txt
+    ├── grok/thread.txt
+    ├── muse/thread.txt
+    └── kimi/thread.txt
 ```
 
-Raw stdout/stderr is retained for each run. Waiting and retry events are also recorded.
+### Saved participant threads
+
+Every CLI gets its own cumulative plaintext thread under `threads/<participant>/thread.txt`.
+
+Each completed or failed invocation is appended to that participant's file with a run ID, UTC timestamp, raw textual CLI output and exit status. This keeps provider outputs separated while making it easy to read the complete history of one participant without processing JSON.
+
+The per-run files under `runs/` remain the authoritative raw invocation logs. `events.jsonl` remains the structured controller timeline, while `threads/` is the human-readable participant-oriented view.
 
 ## Configuration
 
@@ -93,6 +92,4 @@ CAMPFIRE_UNAVAILABLE_POLICY=wait
 CAMPFIRE_WAIT_SECONDS=900
 ```
 
-V0 is sequential: one primary participant owns the shared home at a time.
-
-Parallel delegation is intentionally deferred to a later mode.
+V0 is sequential: one primary participant owns the shared home at a time. Parallel delegation is intentionally deferred.
