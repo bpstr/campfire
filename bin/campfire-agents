@@ -1,0 +1,16 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+source /opt/campfire/lib.sh
+
+current="${CAMPFIRE_CURRENT_AGENT:-}"
+
+while IFS='|' read -r name env_var adapter; do
+  if participant_enabled "$env_var" && participant_installed "$adapter"; then
+    if [[ "$name" == "$current" ]]; then
+      printf '%-10s %s\n' "$name" "self"
+    else
+      printf '%-10s %s\n' "$name" "available"
+    fi
+  fi
+done < <(participant_registry)
