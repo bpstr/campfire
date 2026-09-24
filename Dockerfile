@@ -13,33 +13,37 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     ca-certificates curl git jq python3 python3-pip nodejs npm tini coreutils \
     && rm -rf /var/lib/apt/lists/*
 
-RUN npm install -g @openai/codex @anthropic-ai/claude-code @google/gemini-cli @moonshot-ai/kimi-code || true\n\nCOPY mcp/package.json /opt/campfire/mcp/package.json\nRUN cd /opt/campfire/mcp && npm install --omit=dev
-
-# Grok, Muse and Kimi installation paths are intentionally kept separate from
-# Campfire's controller. Add/pin their supported installers here as needed.
-# A CLI is only considered a participant when both its credential exists and
-# its adapter is executable.
+RUN npm install -g @openai/codex @anthropic-ai/claude-code @google/gemini-cli @moonshot-ai/kimi-code || true
 
 RUN useradd --create-home --uid 1000 --shell /bin/bash campfire \
-    && mkdir -p /opt/campfire/agents /opt/campfire/defaults /opt/campfire/templates /var/log/campfire \
+    && mkdir -p /opt/campfire/agents /opt/campfire/defaults /opt/campfire/templates \
+        /opt/campfire/mcp/providers /var/log/campfire \
         /home/campfire/.codex /home/campfire/.claude /home/campfire/.gemini \
         /home/campfire/.grok /home/campfire/.kimi-code \
         /home/campfire/.config /home/campfire/.local/share \
     && chown -R root:root /opt/campfire \
     && chown -R campfire:campfire /home/campfire /var/log/campfire
 
-COPY lib/lib.sh /opt/campfire/lib.sh\nCOPY mcp/server.mjs /opt/campfire/mcp/server.mjs\nCOPY mcp/campfire-mcp.json /opt/campfire/mcp/campfire-mcp.json\nCOPY bin/campfire-assist /usr/local/bin/campfire-assist
+COPY mcp/package.json /opt/campfire/mcp/package.json
+RUN cd /opt/campfire/mcp && npm install --omit=dev
+
+COPY lib/lib.sh /opt/campfire/lib.sh
 COPY agents/ /opt/campfire/agents/
+COPY mcp/server.mjs /opt/campfire/mcp/server.mjs
+COPY mcp/providers/ /opt/campfire/mcp/providers/
 COPY templates/CAMPFIRE_AGENTS.md /opt/campfire/templates/CAMPFIRE_AGENTS.md
 COPY research/README.md /opt/campfire/defaults/README.md
 COPY bin/campfire-agents /usr/local/bin/campfire-agents
+COPY bin/campfire-assist /usr/local/bin/campfire-assist
+COPY bin/campfire-configure-mcp /usr/local/bin/campfire-configure-mcp
 COPY controller.sh /usr/local/bin/campfire-controller
 
 RUN chmod 0555 /opt/campfire/lib.sh /opt/campfire/agents/*.sh \
-    /usr/local/bin/campfire-agents /usr/local/bin/campfire-controller \
-    && chmod 0444 /opt/campfire/templates/CAMPFIRE_AGENTS.md /opt/campfire/defaults/README.md
+        /usr/local/bin/campfire-agents /usr/local/bin/campfire-assist \
+        /usr/local/bin/campfire-configure-mcp /usr/local/bin/campfire-controller \
+    && chmod 0444 /opt/campfire/templates/CAMPFIRE_AGENTS.md \
+        /opt/campfire/defaults/README.md /opt/campfire/mcp/providers/*
 
 USER campfire
 WORKDIR /home/campfire
-
 ENTRYPOINT ["/usr/bin/tini","--","/usr/local/bin/campfire-controller"]
