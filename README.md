@@ -60,10 +60,17 @@ The handoff becomes effective only after process exit. Self-handoffs are rejecte
 Quota failures, rate limits and temporary outages do not count as successful turns.
 
 ```text
-CAMPFIRE_UNAVAILABLE_POLICY=fallback
+CAMPFIRE_UNAVAILABLE_POLICY=wait
+CAMPFIRE_WAIT_SECONDS=900
 ```
 
-Use `fallback` to continue with another available participant or `stop` to stop and preserve state. Requested and executed recipients are logged separately.
+Policies:
+
+- `wait` — keep the experiment alive, sleep for the configured interval, then retry the requested participant. This preserves the intended cooperation path across temporary quota or provider outages.
+- `fallback` — continue with another available participant. Requested and executed recipients are logged separately.
+- `stop` — stop the experiment and preserve state.
+
+`wait` is useful for long-running Docker experiments where leaving the container idle is inexpensive. The default retry interval is 15 minutes.
 
 ## Observability
 
@@ -74,7 +81,7 @@ Use `fallback` to continue with another available participant or `stop` to stop 
 └── runs/
 ```
 
-Raw stdout/stderr is retained for each run.
+Raw stdout/stderr is retained for each run. Waiting and retry events are also recorded.
 
 ## Configuration
 
@@ -82,7 +89,8 @@ Raw stdout/stderr is retained for each run.
 CAMPFIRE_INITIAL_AGENT=
 CAMPFIRE_MAX_TURNS=100
 CAMPFIRE_TURN_TIMEOUT=1800
-CAMPFIRE_UNAVAILABLE_POLICY=fallback
+CAMPFIRE_UNAVAILABLE_POLICY=wait
+CAMPFIRE_WAIT_SECONDS=900
 ```
 
 V0 is sequential: one primary participant owns the shared home at a time.
