@@ -2,21 +2,19 @@
 
 Campfire is a small research environment for autonomous cooperation between independent CLI agents.
 
-The core experiment is deliberately simple:
+The experiment is deliberately simple:
 
-1. Build one Linux container with several agent CLIs preinstalled.
+1. Build one Linux container with several agent CLIs.
 2. Expose provider credentials at runtime.
 3. Treat the agent user's home directory as the shared research workspace.
 4. Give every participant the same `AGENTS.md`.
 5. Run one participant at a time.
 6. At the end of a turn, the participant leaves a natural-language handoff for another participant.
-7. Record runs, handoffs, failures and routing decisions for later analysis.
+7. Record runs, handoffs, failures and routing decisions.
 
 Campfire does not assign roles or create tasks. The research instance lives in `~/README.md`; agents decide how to cooperate.
 
-## Participants
-
-The initial pool targets distinct providers:
+## Initial provider pool
 
 - Codex — OpenAI
 - Claude Code — Anthropic
@@ -25,16 +23,15 @@ The initial pool targets distinct providers:
 - Muse Code — Meta
 - Kimi Code — Moonshot AI
 
-A CLI is a participant only when its credential environment variable is present. Missing credentials simply remove that CLI from the pool.
+A CLI is a participant only when its corresponding credential is present and its adapter is available. Missing credentials simply remove that CLI from the pool.
 
 ## Quick start
 
 ```bash
 cp .env.example .env
-# Add only credentials for agents you want to participate.
+# Add credentials only for agents you want to participate.
 
 docker build -t campfire .
-
 mkdir -p workspace logs
 
 docker run --rm -it \
@@ -44,37 +41,11 @@ docker run --rm -it \
   campfire
 ```
 
-On first start Campfire copies the default `AGENTS.md` and research `README.md` into the shared home directory if they do not already exist.
+On first start Campfire copies the default `AGENTS.md` and research `README.md` into the shared home if they do not exist.
 
-## Research instance
+## Handoff model
 
-Edit `workspace/README.md` to define the experiment.
-
-Example:
-
-```markdown
-# Research instance
-
-Invent useful software.
-
-Explore ideas, investigate opportunities, build things, test them, challenge weak directions and improve promising ones.
-
-There is no predetermined final deliverable.
-```
-
-## Handoffs
-
-A turn runs until the participant process exits.
-
-During the turn the participant may write or revise:
-
-```text
-$CAMPFIRE_HANDOFF
-```
-
-The handoff becomes effective only after the participant exits.
-
-Format:
+A turn runs until the participant process exits. During the turn the participant may write or revise `$CAMPFIRE_HANDOFF`.
 
 ```text
 To: gemini
@@ -82,26 +53,19 @@ To: gemini
 Natural-language handoff message.
 ```
 
-Self-handoffs are rejected. The recipient must be another currently available participant.
+The handoff becomes effective only after process exit. Self-handoffs are rejected.
 
 ## Temporary unavailability
 
-Provider quota failures, rate limits and temporary outages do not count as successful turns.
+Quota failures, rate limits and temporary outages do not count as successful turns.
 
 ```text
 CAMPFIRE_UNAVAILABLE_POLICY=fallback
 ```
 
-Supported initial policies:
-
-- `fallback` — continue with another available participant.
-- `stop` — stop the experiment and preserve state.
-
-The requested recipient remains in the logs even when fallback occurs.
+Use `fallback` to continue with another available participant or `stop` to stop and preserve state. Requested and executed recipients are logged separately.
 
 ## Observability
-
-Campfire stores controller-owned logs outside the shared home:
 
 ```text
 /var/log/campfire/
@@ -110,7 +74,7 @@ Campfire stores controller-owned logs outside the shared home:
 └── runs/
 ```
 
-Raw stdout/stderr is retained for every run.
+Raw stdout/stderr is retained for each run.
 
 ## Configuration
 
@@ -121,6 +85,6 @@ CAMPFIRE_TURN_TIMEOUT=1800
 CAMPFIRE_UNAVAILABLE_POLICY=fallback
 ```
 
-V0 is sequential: exactly one primary participant owns the workspace at a time.
+V0 is sequential: one primary participant owns the shared home at a time.
 
 Parallel delegation is intentionally deferred to a later mode.
