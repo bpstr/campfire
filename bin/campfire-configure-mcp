@@ -1,33 +1,48 @@
 #!/usr/bin/env bash
 set -euo pipefail
-case "${CAMPFIRE_COMMUNICATION_ENABLED:-false}" in
-  1|true|TRUE|yes|YES|on|ON) ;;
-  *) exit 0 ;;
-esac
+
+strip_toml_section() {
+  local file="$1" section="$2" tmp
+  [[ -f "$file" ]] || return 0
+  tmp="$(mktemp)"
+  awk -v section="$section" '
+    $0 == "[" section "]" { skip=1; next }
+    skip && /^\[/ { skip=0 }
+    !skip { print }
+  ' "$file" > "$tmp"
+  mv "$tmp" "$file"
+}
 
 mkdir -p "$CODEX_HOME" "$HOME/.gemini" "$GROK_HOME" "$KIMI_CODE_HOME" "$XDG_CONFIG_HOME/muse"
-
-# Merge Campfire into JSON settings without deleting unrelated user settings.
-tmp="$(mktemp)"
-if [[ -f "$HOME/.gemini/settings.json" ]]; then
-  jq -s '.[0] * .[1]' "$HOME/.gemini/settings.json" /opt/campfire/mcp/providers/gemini.json > "$tmp"
-else
-  cp /opt/campfire/mcp/providers/gemini.json "$tmp"
-fi
-mv "$tmp" "$HOME/.gemini/settings.json"
-
-tmp="$(mktemp)"
-if [[ -f "$XDG_CONFIG_HOME/muse/settings.json" ]]; then
-  jq -s '.[0] * .[1]' "$XDG_CONFIG_HOME/muse/settings.json" /opt/campfire/mcp/providers/muse.json > "$tmp"
-else
-  cp /opt/campfire/mcp/providers/muse.json "$tmp"
-fi
-mv "$tmp" "$XDG_CONFIG_HOME/muse/settings.json"
-
-# Kimi has a dedicated MCP declaration file.
-cp /opt/campfire/mcp/providers/kimi.json "$KIMI_CODE_HOME/mcp.json"
-
-# TOML-backed clients: append Campfire only when it is not already declared.
 touch "$CODEX_HOME/config.toml" "$GROK_HOME/config.toml"
-grep -q '^\[mcp_servers\.campfire\]' "$CODEX_HOME/config.toml" || { printf '\n' >> "$CODEX_HOME/config.toml"; cat /opt/campfire/mcp/providers/codex.toml >> "$CODEX_HOME/config.toml"; }
-grep -q '^\[mcp_servers\.campfire\]' "$GROK_HOME/config.toml" || { printf '\n' >> "$GROK_HOME/config.toml"; cat /opt/campfire/mcp/providers/grok.toml >> "$GROK_HOME/config.toml"; }
+
+case "${CAMPFIRE_COMMUNICATION_ENABLED:-false}" in
+  1|true|TRUE|yes|YES|on|ON)
+    tmp="$(mktemp)"
+    if [[ -f "$HOME/.gemini/settings.json" ]]; then jq -s '.[0] * .[1]' "$HOME/.gemini/settings.json" /opt/campfire/mcp/providers/gemini.json > "$tmp"; else cp /opt/campfire/mcp/providers/gemini.json "$tmp"; fi
+    mv "$tmp" "$HOME/.gemini/settings.json"
+
+    tmp="$(mktemp)"
+    if [[ -f "$XDG_CONFIG_HOME/muse/settings.json" ]]; then jq -s '.[0] * .[1]' "$XDG_CONFIG_HOME/muse/settings.json" /opt/campfire/mcp/providers/muse.json > "$tmp"; else cp /opt/campfire/mcp/providers/muse.json "$tmp"; fi
+    mv "$tmp" "$XDG_CONFIG_HOME/muse/settings.json"
+
+    tmp="$(mktemp)"
+    if [[ -f "$KIMI_CODE_HOME/mcp.json" ]]; then jq -s '.[0] * .[1]' "$KIMI_CODE_HOME/mcp.json" /opt/campfire/mcp/providers/kimi.json > "$tmp"; else cp /opt/campfire/mcp/providers/kimi.json "$tmp"; fi
+    mv "$tmp" "$KIMI_CODE_HOME/mcp.json"
+
+    strip_toml_section "$CODEX_HOME/config.toml" "mcp_servers.campfire"
+    strip_toml_section "$GROK_HOME/config.toml" "mcp_servers.campfire"
+    printf '\n' >> "$CODEX_HOME/config.toml"; cat /opt/campfire/mcp/providers/codex.toml >> "$CODEX_HOME/config.toml"
+    printf '\n' >> "$GROK_HOME/config.toml"; cat /opt/campfire/mcp/providers/grok.toml >> "$GROK_HOME/config.toml"
+    ;;
+  *)
+    for file in "$HOME/.gemini/settings.json" "$XDG_CONFIG_HOME/muse/settings.json" "$KIMI_CODE_HOME/mcp.json"; do
+      [[ -f "$file" ]] || continue
+      tmp="$(mktemp)"
+      if [[ "$file" == *"/muse/settings.json" ]]; then jq 'del(.mcp_servers.campfire) | del(.mcpServers.campfire)' "$file" > "$tmp"; else jq 'del(.mcpServers.campfire)' "$file" > "$tmp"; fi
+      mv "$tmp" "$file"
+    done
+    strip_toml_section "$CODEX_HOME/config.toml" "mcp_servers.campfire"
+    strip_toml_section "$GROK_HOME/config.toml" "mcp_servers.campfire"
+    ;;
+esac
