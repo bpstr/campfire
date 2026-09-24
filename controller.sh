@@ -12,7 +12,7 @@ CONTROLLER_LOG="/var/log/campfire/controller.log"
 controller_log() { printf '%s [%s] %s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$1" "$2" | tee -a "$CONTROLLER_LOG" >&2; }
 controller_log INFO "controller started pid=$ max_turns=$MAX_TURNS policy=$UNAVAILABLE_POLICY communication=${CAMPFIRE_COMMUNICATION_ENABLED:-false}"\n/usr/local/bin/campfire-configure-mcp
 
-[[ -f "$HOME/AGENTS.md" ]] || cp /opt/campfire/templates/CAMPFIRE_AGENTS.md "$HOME/AGENTS.md"
+[[ -f "$HOME/AGENTS.md" ]] || cp /opt/campfire/templates/INTERNAL_AGENT_INSTRUCTIONS.md "$HOME/AGENTS.md"
 [[ -f "$HOME/README.md" ]] || cp /opt/campfire/defaults/README.md "$HOME/README.md"
 
 current="${CAMPFIRE_INITIAL_AGENT:-}"
