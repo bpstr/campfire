@@ -16,7 +16,7 @@ if [[ -z "$current" ]] || ! participant_adapter "$current" >/dev/null 2>&1; then
 [[ -n "$current" ]] || { echo "Campfire: no enabled participants." >&2; exit 2; }
 
 turn=1
-while (( turn <= MAX_TURNS )); do
+while (( MAX_TURNS <= 0 || turn <= MAX_TURNS )); do
   adapter="$(participant_adapter "$current" || true)"
   [[ -n "$adapter" ]] || { current="$(choose_first_available "$current")"; [[ -n "$current" ]] || exit 3; continue; }
 
