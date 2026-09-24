@@ -71,11 +71,41 @@ Campfire stores raw stdout/stderr for every invocation under `runs/` and the str
 
 ### Native threads and sessions
 
-Campfire does not copy, relocate, normalize, or replace participant conversation history. Each CLI keeps its native threads, sessions, history, and indexes in its own default location and format.
+Campfire leaves each participant's native session store in the CLI's own default format. Because the whole `/home/campfire` directory is the persistent workspace mount, these stores survive container restarts together with the research workspace.
 
-Where a CLI supports native session continuation, history search, or conversation recall, the participant should be allowed to use that mechanism directly. Campfire's per-run logs are observability records, not substitutes for native agent memory.
+| Participant | Native session/history location in the container | Native continuation |
+| --- | --- | --- |
+| Codex | `~/.codex/sessions/YYYY/MM/DD/rollout-*.jsonl` | `codex exec resume --last` / session ID |
+| Claude Code | `~/.claude/projects/<encoded-cwd>/<session-id>.jsonl` | `claude --continue` / `--resume <id>` |
+| Gemini CLI | `~/.gemini/tmp/<project_hash>/chats/` | `gemini --resume` / session ID |
+| Grok | `~/.grok/sessions/<encoded-cwd>/<session-id>/` | `grok --continue` / `--resume <id>` |
+| Muse Code | `${XDG_DATA_HOME:-~/.local/share}/muse/sessions/YYYY/MM/DD/<session-id>/session.jsonl` | `muse resume` |
+| Kimi Code | `~/.kimi-code/sessions/<workDirKey>/<sessionId>/` | `kimi --continue` / `--session <id>` |
 
-This intentionally preserves differences between agent harnesses: session persistence and history capabilities are part of the participant being studied.
+Campfire does not copy, relocate, normalize, or replace these stores. Its `runs/*.log` files are observability records, not substitutes for native agent memory. Session persistence, search, compaction, subagent history and resume behavior are deliberately left to each harness because those capabilities are part of the participant being studied.
+
+The image explicitly keeps the configurable native roots inside the mounted home:
+
+```text
+CODEX_HOME=/home/campfire/.codex
+GROK_HOME=/home/campfire/.grok
+KIMI_CODE_HOME=/home/campfire/.kimi-code
+XDG_CONFIG_HOME=/home/campfire/.config
+XDG_DATA_HOME=/home/campfire/.local/share
+```
+
+Claude Code and Gemini use their normal `~/.claude` and `~/.gemini` locations.
+
+Kimi needs one additional bridge for API-key automation: Campfire maps `KIMI_API_KEY` into Kimi Code's supported `KIMI_MODEL_API_KEY` channel and selects `kimi-for-coding` by default, so the same env-gated participant rule actually authenticates non-interactively.
+
+Native session references:
+
+- Codex: https://github.com/openai/codex — local rollouts under `$CODEX_HOME/sessions`; exec sessions support `resume --last`.
+- Claude Code: https://docs.anthropic.com/en/docs/claude-code/cli-usage — `--continue` and `--resume`; CLI transcripts are project-scoped under `~/.claude/projects`.
+- Gemini CLI: https://geminicli.com/docs/cli/tutorials/session-management/ — automatic project-scoped history and `--resume`.
+- Grok: https://github.com/xai-org/grok-build — sessions under `$GROK_HOME/sessions`, with resume/continue and local search.
+- Muse Code: https://dev.meta.ai/docs/muse-code — append-only retained session logs under the XDG data directory and `muse resume`.
+- Kimi Code: https://www.kimi.com/code/docs/en/kimi-code-cli/guides/sessions — sessions under `$KIMI_CODE_HOME/sessions` and native continue/session selection.
 
 ## Configuration
 
