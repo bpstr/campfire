@@ -92,4 +92,4 @@ CAMPFIRE_UNAVAILABLE_POLICY=wait
 CAMPFIRE_WAIT_SECONDS=900
 ```
 
-V0 is sequential: one primary participant owns the shared home at a time. Parallel delegation is intentionally deferred.
+`CAMPFIRE_MAX_TURNS` controls the maximum number of turns. Set it to `0` or `-1` to run indefinitely until the container is stopped. Any positive value limits the experiment to that many turns.\n\nV0 is sequential: one primary participant owns the shared home at a time. Parallel delegation is intentionally deferred.
