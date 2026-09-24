@@ -1,0 +1,3 @@
+[mcp_servers.campfire]
+command = "node"
+args = ["/opt/campfire/mcp/server.mjs"]
