@@ -134,4 +134,6 @@ Self-calls are rejected. Temporary assistants receive communication disabled, ca
 
 Queued `message` items and the previous handoff are injected into the recipient's next fresh primary session. Every normal Campfire turn remains a fresh native CLI session; native session history is retained only for observability.
 
-The MCP implementation lives under `mcp/`, with the provider-neutral semantics kept separate from individual CLI adapters.
+The MCP implementation lives under `mcp/`, with provider-neutral semantics kept separate from individual CLI adapters. At startup Campfire toggles its own MCP entry using each client's native configuration: Codex via `$CODEX_HOME/config.toml`, Claude Code via `--mcp-config`, Gemini via `~/.gemini/settings.json`, Grok via `$GROK_HOME/config.toml`, Muse via `$XDG_CONFIG_HOME/muse/settings.json`, and Kimi via `$KIMI_CODE_HOME/mcp.json`.
+
+Existing JSON settings are merged rather than replaced, and disabling communication removes only Campfire's own MCP entry. Primary headless runs use each CLI's unattended approval mode where required so MCP tool calls do not stop for interactive confirmation.
