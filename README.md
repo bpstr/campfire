@@ -62,25 +62,20 @@ Policies:
 /var/log/campfire/
 ├── events.jsonl
 ├── handoffs/
-├── runs/
-│   ├── 000001-codex.log
-│   └── ...
-└── threads/
-    ├── codex/thread.txt
-    ├── claude/thread.txt
-    ├── gemini/thread.txt
-    ├── grok/thread.txt
-    ├── muse/thread.txt
-    └── kimi/thread.txt
+└── runs/
+    ├── 000001-codex.log
+    └── ...
 ```
 
-### Saved participant threads
+Campfire stores raw stdout/stderr for every invocation under `runs/` and the structured controller timeline in `events.jsonl`.
 
-Every CLI gets its own cumulative plaintext thread under `threads/<participant>/thread.txt`.
+### Native threads and sessions
 
-Each completed or failed invocation is appended to that participant's file with a run ID, UTC timestamp, raw textual CLI output and exit status. This keeps provider outputs separated while making it easy to read the complete history of one participant without processing JSON.
+Campfire does not copy, relocate, normalize, or replace participant conversation history. Each CLI keeps its native threads, sessions, history, and indexes in its own default location and format.
 
-The per-run files under `runs/` remain the authoritative raw invocation logs. `events.jsonl` remains the structured controller timeline, while `threads/` is the human-readable participant-oriented view.
+Where a CLI supports native session continuation, history search, or conversation recall, the participant should be allowed to use that mechanism directly. Campfire's per-run logs are observability records, not substitutes for native agent memory.
+
+This intentionally preserves differences between agent harnesses: session persistence and history capabilities are part of the participant being studied.
 
 ## Configuration
 
