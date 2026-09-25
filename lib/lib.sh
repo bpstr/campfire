@@ -14,14 +14,27 @@ EOF
 
 participant_installed() { [[ -x "$1" ]]; }
 
+participant_manually_verified() {
+  local wanted="$1" name
+  local -a names
+  IFS=', ' read -r -a names <<< "${CAMPFIRE_MANUALLY_VERIFIED_AGENTS:-}"
+  for name in "${names[@]}"; do
+    [[ "$name" == "$wanted" ]] && return 0
+  done
+  return 1
+}
+
 participant_authenticated() {
   local name="$1"
+  participant_manually_verified "$name" && return 0
   case "$name" in
-    codex) [[ -n "${CODEX_ACCESS_TOKEN:-}" || -s "${CODEX_HOME:-$HOME/.codex}/auth.json" ]] ;;
-    claude) [[ -d "$HOME/.claude" ]] && find "$HOME/.claude" -maxdepth 2 -type f -size +0c 2>/dev/null | grep -q . ;;
-    gemini) [[ -d "$HOME/.gemini" ]] && find "$HOME/.gemini" -maxdepth 2 -type f -size +0c 2>/dev/null | grep -q . ;;
+    codex) codex login status >/dev/null 2>&1 ;;
+    claude) [[ -n "${CLAUDE_CODE_OAUTH_TOKEN:-}" ]] || claude auth status 2>/dev/null | jq -e '.loggedIn == true' >/dev/null ;;
+    gemini) [[ -n "${GEMINI_API_KEY:-}" || -s "$HOME/.gemini/oauth_creds.json" ]] ||
+      { [[ "$(jq -r '.security.auth.selectedType // empty' "$HOME/.gemini/settings.json" 2>/dev/null)" == gemini-api-key ]] &&
+        node /opt/campfire/gemini-auth-status.cjs; } ;;
     grok) [[ -s "${GROK_HOME:-$HOME/.grok}/auth.json" ]] ;;
-    muse) [[ -d "${XDG_CONFIG_HOME:-$HOME/.config}/muse" || -d "${XDG_DATA_HOME:-$HOME/.local/share}/muse" ]] ;;
+    muse) [[ -n "${META_API_KEY:-}" ]] || { local auth_file="${XDG_CONFIG_HOME:-$HOME/.config}/muse/auth.json"; [[ -s "$auth_file" ]] && [[ "$(jq -r '.providers.meta.storage // empty' "$auth_file" 2>/dev/null)" != keychain ]]; } ;;
     kimi) [[ -d "${KIMI_CODE_HOME:-$HOME/.kimi-code}" ]] && find "${KIMI_CODE_HOME:-$HOME/.kimi-code}" -maxdepth 2 -type f -size +0c 2>/dev/null | grep -q . ;;
     *) return 1 ;;
   esac
@@ -60,6 +73,15 @@ log_event() {
 }
 
 handoff_target() { sed -nE 's/^[[:space:]]*To:[[:space:]]*([A-Za-z0-9_-]+)[[:space:]]*$/\1/p' "$1" | head -n1 | tr '[:upper:]' '[:lower:]'; }
-choose_first_available() { available_participants "${1:-}" | head -n1; }
-is_available_name() { available_participants "" | grep -Fxq "$1"; }
+choose_first_available() {
+  local exclude="${1:-}" name adapter
+  while IFS='|' read -r name adapter; do
+    if [[ "$name" != "$exclude" ]] && participant_enabled "$name" "$adapter"; then
+      printf '%s\n' "$name"
+      return 0
+    fi
+  done < <(participant_registry)
+  return 1
+}
+is_available_name() { participant_adapter "$1" >/dev/null 2>&1; }
 looks_temporarily_unavailable() { grep -Eiq '(rate.?limit|quota|usage.?limit|too many requests|429|temporar(il)?y unavailable|capacity|resource exhausted)' "$1"; }

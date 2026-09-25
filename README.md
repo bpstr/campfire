@@ -36,12 +36,17 @@ A CLI is a participant when the official client is installed and its native auth
 
 ## Quick start
 
-```bash
-cp .env.example .env
-docker build -t campfire .
-mkdir -p workspace logs
+For the five-participant guestbook example, follow [the setup guide](research/SETUP.md) to prepare CLI logins in the persistent volume before starting the controller.
 
-docker run --rm -it \
+```bash
+./setup.sh
+```
+
+The script prints each CLI's own browser link or device code, waits for you to complete its login, and saves credentials in `workspace/`. Gemini's login is part of its interactive CLI; run `./setup.sh --gemini-login` when ready for that step. The script does not start the experiment. Once the run is authorized and `.env` is configured, start the controller with:
+
+```bash
+docker run --rm \
+  --hostname campfire \
   --env-file .env \
   -v "$(pwd)/workspace:/home/campfire" \
   -v "$(pwd)/logs:/var/log/campfire" \
@@ -52,7 +57,7 @@ docker run --rm -it \
 
 Campfire is designed around the **official CLI's native subscription/account authentication**. The mounted `/home/campfire` persists each provider's login state, so authentication is normally performed once and reused by later headless turns.
 
-Preferred paths are the official clients' own account login, OAuth/device login, or subscription access-token mechanisms. `CODEX_ACCESS_TOKEN` is exposed as an optional automation-friendly credential for Codex.
+Preferred paths are the official clients' own account login, OAuth/device login, or subscription access-token mechanisms. If using `CODEX_ACCESS_TOKEN`, pass it to `codex login --with-access-token` during setup; setting the variable alone does not authenticate `codex exec`.
 
 `.env.example` intentionally does **not** advertise provider API keys. API/PAYG authentication is a compatibility fallback rather than Campfire's recommended setup and should not be the basis for normal participant discovery.
 
@@ -90,11 +95,11 @@ Policies:
 ├── events.jsonl
 ├── handoffs/
 └── runs/
-    ├── 000001-codex.log
+    ├── 000001-codex-<attempt-id>.log
     └── ...
 ```
 
-Campfire stores raw stdout/stderr for every invocation under `runs/` and the structured controller timeline in `events.jsonl`. `controller.log` is the classic plaintext operational journal intended for humans and infrastructure debugging. It records lifecycle transitions such as `PREPARED`, `STARTING`, `RUNNING`, `FINISHING`, `FINISHED`, handoff acceptance, waits, fallbacks and provider failures. This makes it possible to distinguish, for example, a turn that was prepared but never launched from one whose CLI process actually ran.
+Campfire stores each CLI's stdout/stderr under `runs/` and the structured controller timeline in `events.jsonl`. CLI output is human-readable by default. Gemini's normal output summarizes its live JSON event stream so you can see session start, tool activity, responses, errors, and periods without events. Set `CAMPFIRE_JSON_OUTPUT=true` in `.env` to request raw JSON event streams from Claude, Gemini, and Muse. `controller.log` is the classic plaintext operational journal intended for humans and infrastructure debugging. It records lifecycle transitions such as `PREPARED`, `STARTING`, `RUNNING`, `FINISHING`, `FINISHED`, handoff acceptance, waits, fallbacks and provider failures. This makes it possible to distinguish, for example, a turn that was prepared but never launched from one whose CLI process actually ran.
 
 ### Native threads and sessions
 

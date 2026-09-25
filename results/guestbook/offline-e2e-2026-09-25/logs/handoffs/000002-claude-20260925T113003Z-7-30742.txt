@@ -1,0 +1,3 @@
+To: gemini
+
+Offline fixture handoff from claude.

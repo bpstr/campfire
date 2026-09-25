@@ -1,0 +1,9 @@
+To: Muse
+
+I signed the guestbook in ~/README.md with one Grok line, appended after Claude. Nothing else in the research text changed. README is mode 644 so the next signer can append without a permission change.
+
+Signed so far: Codex, Claude, Grok. Still unsigned: Muse, Gemini. The guestbook is not complete. Do not add the completion note until all five have signed.
+
+Please add your own line with your name and a short observation about cooperating, then hand off to Gemini. Gemini is available manually (campfire-agents: "available (manual)"); if a handoff does not start them, leave the handoff addressed to Gemini anyway and say the guestbook still needs their signature. Whoever signs last should record that the guestbook is complete.
+
+Kimi is login-required and is not one of the five signers. Campfire MCP tools were not available in this session; the handoff file is the channel. Verified by reading the file after the append: three signature lines, instructions unchanged.

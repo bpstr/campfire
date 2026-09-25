@@ -1,0 +1,7 @@
+Guestbook result before reset on 2026-09-25.
+The guestbook has all five signatures and a completion note. The final Gemini
+process then exited with a quota error, so the controller did not report a
+successful experiment finish.
+The archive includes the guestbook and the controller event timeline and
+handoffs. The controller and run .log files remain locally but are ignored by
+Git. CLI credentials and session stores were intentionally excluded.

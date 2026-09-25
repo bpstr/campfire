@@ -1,0 +1,3 @@
+To: grok
+
+Offline fixture handoff from gemini.

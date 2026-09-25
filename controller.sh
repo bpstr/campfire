@@ -6,15 +6,25 @@ MAX_TURNS="${CAMPFIRE_MAX_TURNS:-100}"
 TURN_TIMEOUT="${CAMPFIRE_TURN_TIMEOUT:-1800}"
 UNAVAILABLE_POLICY="${CAMPFIRE_UNAVAILABLE_POLICY:-fallback}"
 WAIT_SECONDS="${CAMPFIRE_WAIT_SECONDS:-900}"
+ATTEMPT_ID="$(date -u +%Y%m%dT%H%M%SZ)-$$-$RANDOM"
 
 mkdir -p /var/log/campfire/runs /var/log/campfire/handoffs "$HOME/.campfire/inbox"
 CONTROLLER_LOG="/var/log/campfire/controller.log"
 controller_log() { printf '%s [%s] %s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$1" "$2" | tee -a "$CONTROLLER_LOG" >&2; }
-controller_log INFO "controller started pid=$ max_turns=$MAX_TURNS policy=$UNAVAILABLE_POLICY communication=${CAMPFIRE_COMMUNICATION_ENABLED:-false}"
+controller_log INFO "controller started pid=$$ attempt=$ATTEMPT_ID max_turns=$MAX_TURNS policy=$UNAVAILABLE_POLICY communication=${CAMPFIRE_COMMUNICATION_ENABLED:-false}"
 /usr/local/bin/campfire-configure-mcp
 
 [[ -f "$HOME/AGENTS.md" ]] || cp /opt/campfire/templates/INTERNAL_AGENT_INSTRUCTIONS.md "$HOME/AGENTS.md"
 [[ -f "$HOME/README.md" ]] || cp /opt/campfire/defaults/README.md "$HOME/README.md"
+
+# Gemini's file keychain is encrypted with the container hostname. Catch the
+# common setup/run hostname mismatch before any participant spends a turn.
+if [[ -s "$HOME/.gemini/gemini-credentials.json" && -z "${GEMINI_API_KEY:-}" ]] &&
+   [[ "$(hostname)" != campfire ]] &&
+   jq -e '.security.auth.selectedType == "gemini-api-key"' "$HOME/.gemini/settings.json" >/dev/null 2>&1; then
+  controller_log ERROR 'Gemini credentials require --hostname campfire; refusing to start with a different hostname'
+  exit 8
+fi
 
 current="${CAMPFIRE_INITIAL_AGENT:-}"
 if [[ -z "$current" ]] || ! participant_adapter "$current" >/dev/null 2>&1; then current="$(choose_first_available)"; fi
@@ -28,7 +38,7 @@ while (( MAX_TURNS <= 0 || turn <= MAX_TURNS )); do
 
   handoff="$HOME/.campfire/handoff"
   rm -f "$handoff"
-  run_id="$(printf '%06d-%s' "$turn" "$current")"
+  run_id="$(printf '%06d-%s-%s' "$turn" "$current" "$ATTEMPT_ID")"
   run_log="/var/log/campfire/runs/$run_id.log"
 
   incoming=""
@@ -56,7 +66,7 @@ while (( MAX_TURNS <= 0 || turn <= MAX_TURNS )); do
   log_event run.started run "$run_id" agent "$current"
 
   set +e
-  timeout --signal=TERM --kill-after=15 "$TURN_TIMEOUT" "$adapter" 2>&1 | tee "$run_log"
+  timeout --signal=TERM --kill-after=15 "$TURN_TIMEOUT" "$adapter" </dev/null 2>&1 | tee "$run_log"
   status=${PIPESTATUS[0]}
   set -e
 
@@ -78,6 +88,12 @@ while (( MAX_TURNS <= 0 || turn <= MAX_TURNS )); do
     log_event routing.fallback requested "$current" executed "$next"
     current="$next"
     continue
+  fi
+
+  if (( status != 0 )); then
+    controller_log ERROR "run=$run_id agent=$current failed exit=$status"
+    log_event run.failed run "$run_id" agent "$current" status "$status"
+    exit "$status"
   fi
 
   [[ -s "$handoff" ]] || { controller_log ERROR "run=$run_id handoff missing"; log_event handoff.missing run "$run_id" agent "$current"; exit 4; }

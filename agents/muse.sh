@@ -5,4 +5,7 @@ if [[ "${CAMPFIRE_ASSISTANT_MODE:-0}" == "1" ]]; then
   exec muse exec --yolo "$prompt"
 fi
 prompt="Read ~/AGENTS.md and ~/README.md, inspect the existing home workspace, and take a useful autonomous turn. Read the incoming context below. Before finishing, leave a handoff as instructed in AGENTS.md.\n\nIncoming context:\n${CAMPFIRE_INCOMING_CONTEXT:-None}"
-exec muse exec --yolo --json "$prompt"
+if [[ "${CAMPFIRE_JSON_OUTPUT:-false}" =~ ^(1|true|TRUE|yes|YES|on|ON)$ ]]; then
+  exec muse exec --yolo --json "$prompt"
+fi
+exec muse exec --yolo "$prompt"

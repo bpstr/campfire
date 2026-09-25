@@ -5,6 +5,7 @@ current="${CAMPFIRE_CURRENT_AGENT:-}"
 while IFS='|' read -r name adapter; do
   if participant_enabled "$name" "$adapter"; then
     [[ "$name" == "$current" ]] && state=self || state=available
+    if participant_manually_verified "$name"; then state="$state (manual)"; fi
   elif participant_installed "$adapter"; then
     state=login-required
   else

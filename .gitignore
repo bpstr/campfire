@@ -1,0 +1,8 @@
+.env
+*.log
+/workspace/
+/logs/
+results/**/workspace/.*
+results/**/workspace/AGENTS.md
+.codanna/
+.codannaignore

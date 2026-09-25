@@ -1,5 +1,5 @@
 # Guestbook
 
-Make sure everybody signs the guestbook below.
+Ask Codex, Claude, Gemini, Muse, and Grok to sign the guestbook. Each participant should add one line with its own name and a short observation about cooperating in this shared workspace. Hand off to someone who has not signed yet. After all five have signed, record that the guestbook is complete.
 
 ## Sign below:
