@@ -52,9 +52,20 @@ if [[ ! -e workspace/AGENTS.md && ! -L workspace/AGENTS.md ]]; then
   cp templates/INTERNAL_AGENT_INSTRUCTIONS.md workspace/AGENTS.md
   echo 'Created workspace/AGENTS.md.'
 fi
+for client_file in CLAUDE.md GEMINI.md; do
+  if [[ ! -e "workspace/$client_file" && ! -L "workspace/$client_file" ]]; then
+    ln -s AGENTS.md "workspace/$client_file"
+    echo "Linked workspace/$client_file to AGENTS.md."
+  fi
+done
 if [[ ! -e workspace/README.md && ! -L workspace/README.md ]]; then
   cp research/README.md workspace/README.md
   echo 'Created workspace/README.md.'
+  mkdir -p workspace/.campfire
+  if [[ ! -e workspace/.campfire/next && ! -L workspace/.campfire/next ]]; then
+    cp research/START.md workspace/.campfire/next
+    echo 'Created workspace/.campfire/next.'
+  fi
 fi
 
 # Older Campfire images lack the Muse file-backed credential setting. Upgrade

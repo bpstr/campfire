@@ -9,11 +9,12 @@ adapter="$(participant_adapter "$target" || true)"
 
 assist_root="/tmp/campfire-assist-${CAMPFIRE_RUN_ID:-run}-$$"
 mkdir -p "$assist_root"
+printf '%s\n%s' "$target" "$request" > "$assist_root/input"
 export CAMPFIRE_CURRENT_AGENT="$target"
+export CAMPFIRE_INPUT_HANDOFF="$assist_root/input"
 export CAMPFIRE_HANDOFF="$assist_root/disabled-handoff"
 export CAMPFIRE_COMMUNICATION_ENABLED=false
 export CAMPFIRE_ASSISTANT_MODE=1
-export CAMPFIRE_ASSIST_REQUEST="$request"
 
-# Adapters detect assistant mode and receive this request as their fresh-session prompt.
+# The assistant receives the request body verbatim through the same adapter path.
 exec "$adapter"

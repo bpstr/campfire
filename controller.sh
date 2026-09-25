@@ -8,14 +8,25 @@ UNAVAILABLE_POLICY="${CAMPFIRE_UNAVAILABLE_POLICY:-fallback}"
 WAIT_SECONDS="${CAMPFIRE_WAIT_SECONDS:-900}"
 ATTEMPT_ID="$(date -u +%Y%m%dT%H%M%SZ)-$$-$RANDOM"
 
-mkdir -p /var/log/campfire/runs /var/log/campfire/handoffs "$HOME/.campfire/inbox"
+state_dir="$HOME/.campfire"
+next_handoff="$state_dir/next"
+outgoing_handoff="$state_dir/handoff"
+mkdir -p /var/log/campfire/runs /var/log/campfire/handoffs "$state_dir/inbox"
 CONTROLLER_LOG="/var/log/campfire/controller.log"
 controller_log() { printf '%s [%s] %s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$1" "$2" | tee -a "$CONTROLLER_LOG" >&2; }
 controller_log INFO "controller started pid=$$ attempt=$ATTEMPT_ID max_turns=$MAX_TURNS policy=$UNAVAILABLE_POLICY communication=${CAMPFIRE_COMMUNICATION_ENABLED:-false}"
 /usr/local/bin/campfire-configure-mcp
 
 [[ -f "$HOME/AGENTS.md" ]] || cp /opt/campfire/templates/INTERNAL_AGENT_INSTRUCTIONS.md "$HOME/AGENTS.md"
-[[ -f "$HOME/README.md" ]] || cp /opt/campfire/defaults/README.md "$HOME/README.md"
+for client_file in CLAUDE.md GEMINI.md; do
+  if [[ ! -e "$HOME/$client_file" && ! -L "$HOME/$client_file" ]]; then
+    ln -s AGENTS.md "$HOME/$client_file"
+  fi
+done
+if [[ ! -f "$HOME/README.md" ]]; then
+  cp /opt/campfire/defaults/README.md "$HOME/README.md"
+  [[ -e "$next_handoff" || -L "$next_handoff" ]] || cp /opt/campfire/defaults/START.md "$next_handoff"
+fi
 
 # Gemini's file keychain is encrypted with the container hostname. Catch the
 # common setup/run hostname mismatch before any participant spends a turn.
@@ -26,37 +37,40 @@ if [[ -s "$HOME/.gemini/gemini-credentials.json" && -z "${GEMINI_API_KEY:-}" ]] 
   exit 8
 fi
 
-current="${CAMPFIRE_INITIAL_AGENT:-}"
-if [[ -z "$current" ]] || ! participant_adapter "$current" >/dev/null 2>&1; then current="$(choose_first_available)"; fi
-[[ -n "$current" ]] || { controller_log ERROR "no enabled participants"; exit 2; }
+if [[ -n "${CAMPFIRE_INITIAL_AGENT:-}" ]]; then
+  controller_log WARN 'CAMPFIRE_INITIAL_AGENT is ignored; the first line of ~/.campfire/next selects the participant'
+fi
+[[ -s "$next_handoff" ]] || { controller_log ERROR "initial handoff missing: $next_handoff"; exit 2; }
 
-previous_handoff=""
 turn=1
 while (( MAX_TURNS <= 0 || turn <= MAX_TURNS )); do
+  current="$(handoff_target "$next_handoff" || true)"
+  [[ -n "$current" ]] || { controller_log ERROR "invalid recipient in $next_handoff"; exit 5; }
+  handoff_has_body "$next_handoff" || { controller_log ERROR "handoff text missing in $next_handoff"; exit 5; }
   adapter="$(participant_adapter "$current" || true)"
-  [[ -n "$adapter" ]] || { controller_log WARN "participant unavailable agent=$current"; current="$(choose_first_available "$current")"; [[ -n "$current" ]] || exit 3; continue; }
+  if [[ -z "$adapter" ]]; then
+    controller_log WARN "participant unavailable agent=$current"
+    if [[ "$UNAVAILABLE_POLICY" == wait ]]; then
+      sleep "$WAIT_SECONDS"
+      continue
+    fi
+    [[ "$UNAVAILABLE_POLICY" == fallback ]] || exit 3
+    next="$(choose_first_available "$current")"
+    [[ -n "$next" ]] || exit 3
+    handoff_retarget "$next_handoff" "$next" "$state_dir/next.$$.tmp"
+    mv "$state_dir/next.$$.tmp" "$next_handoff"
+    log_event routing.fallback requested "$current" executed "$next"
+    continue
+  fi
 
-  handoff="$HOME/.campfire/handoff"
-  rm -f "$handoff"
+  rm -f "$outgoing_handoff"
   run_id="$(printf '%06d-%s-%s' "$turn" "$current" "$ATTEMPT_ID")"
   run_log="/var/log/campfire/runs/$run_id.log"
 
-  incoming=""
-  inbox="$HOME/.campfire/inbox/$current"
-  if [[ -d "$inbox" ]]; then
-    while IFS= read -r file; do
-      incoming+="Message:"$'\n'"$(cat "$file")"$'\n\n'
-      rm -f "$file"
-    done < <(find "$inbox" -maxdepth 1 -type f | sort)
-  fi
-  if [[ -n "$previous_handoff" && -f "$previous_handoff" ]]; then
-    incoming+="Incoming handoff:"$'\n'"$(cat "$previous_handoff")"$'\n'
-  fi
-
   export CAMPFIRE_CURRENT_AGENT="$current"
-  export CAMPFIRE_HANDOFF="$handoff"
+  export CAMPFIRE_INPUT_HANDOFF="$next_handoff"
+  export CAMPFIRE_HANDOFF="$outgoing_handoff"
   export CAMPFIRE_RUN_ID="$run_id"
-  export CAMPFIRE_INCOMING_CONTEXT="$incoming"
 
   controller_log INFO "run=$run_id state=PREPARED agent=$current adapter=$adapter"
   log_event run.prepared run "$run_id" agent "$current" adapter "$adapter"
@@ -85,8 +99,9 @@ while (( MAX_TURNS <= 0 || turn <= MAX_TURNS )); do
     fi
     [[ "$UNAVAILABLE_POLICY" == fallback ]] || exit "$status"
     next="$(choose_first_available "$current")"; [[ -n "$next" ]] || exit "$status"
+    handoff_retarget "$next_handoff" "$next" "$state_dir/next.$$.tmp"
+    mv "$state_dir/next.$$.tmp" "$next_handoff"
     log_event routing.fallback requested "$current" executed "$next"
-    current="$next"
     continue
   fi
 
@@ -96,32 +111,31 @@ while (( MAX_TURNS <= 0 || turn <= MAX_TURNS )); do
     exit "$status"
   fi
 
-  [[ -s "$handoff" ]] || { controller_log ERROR "run=$run_id handoff missing"; log_event handoff.missing run "$run_id" agent "$current"; exit 4; }
-  target="$(handoff_target "$handoff")"
+  [[ -s "$outgoing_handoff" ]] || { controller_log ERROR "run=$run_id handoff missing"; log_event handoff.missing run "$run_id" agent "$current"; exit 4; }
+  target="$(handoff_target "$outgoing_handoff" || true)"
   archive="/var/log/campfire/handoffs/$run_id.txt"
-  cp "$handoff" "$archive"
+  cp "$outgoing_handoff" "$archive"
   [[ -n "$target" ]] || { log_event handoff.invalid run "$run_id" reason missing_recipient; exit 5; }
+  handoff_has_body "$outgoing_handoff" || { log_event handoff.invalid run "$run_id" reason empty_text; exit 5; }
   [[ "$target" != "$current" ]] || { log_event handoff.invalid run "$run_id" reason self_handoff; exit 6; }
+
+  cp "$archive" "$state_dir/next.$$.tmp"
+  mv "$state_dir/next.$$.tmp" "$next_handoff"
 
   if ! is_available_name "$target"; then
     log_event handoff.unavailable run "$run_id" requested "$target"
-    if [[ "$UNAVAILABLE_POLICY" == wait ]]; then
-      controller_log INFO "handoff target=$target unavailable; waiting seconds=$WAIT_SECONDS"
-      sleep "$WAIT_SECONDS"
-      current="$target"
-      previous_handoff="$archive"
-      continue
+    if [[ "$UNAVAILABLE_POLICY" == stop ]]; then exit 7; fi
+    if [[ "$UNAVAILABLE_POLICY" == fallback ]]; then
+      next="$(choose_first_available "$current")"; [[ -n "$next" ]] || exit 7
+      handoff_retarget "$next_handoff" "$next" "$state_dir/next.$$.tmp"
+      mv "$state_dir/next.$$.tmp" "$next_handoff"
+      log_event routing.fallback requested "$target" executed "$next"
+      target="$next"
     fi
-    [[ "$UNAVAILABLE_POLICY" == fallback ]] || exit 7
-    next="$(choose_first_available "$current")"; [[ -n "$next" ]] || exit 7
-    log_event routing.fallback requested "$target" executed "$next"
-    target="$next"
   fi
 
   controller_log INFO "run=$run_id state=HANDOFF_ACCEPTED from=$current to=$target"
   log_event handoff.accepted run "$run_id" from "$current" to "$target" archive "$archive"
-  previous_handoff="$archive"
-  current="$target"
   turn=$((turn + 1))
 done
 

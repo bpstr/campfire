@@ -42,7 +42,7 @@ For the five-participant guestbook example, follow [the setup guide](research/SE
 ./setup.sh
 ```
 
-The script prints each CLI's own browser link or device code, waits for you to complete its login, and saves credentials in `workspace/`. Gemini's login is part of its interactive CLI; run `./setup.sh --gemini-login` when ready for that step. The script does not start the experiment. Once the run is authorized and `.env` is configured, start the controller with:
+The script prints each CLI's own browser link or device code, waits for you to complete its login, and saves credentials in `workspace/`. For a new workspace it also creates `workspace/.campfire/next`, whose first line selects the initial CLI. Gemini's login is part of its interactive CLI; run `./setup.sh --gemini-login` when ready for that step. The script does not start the experiment. Once the run is authorized and `.env` is configured, start the controller with:
 
 ```bash
 docker run --rm \
@@ -65,15 +65,14 @@ Preferred paths are the official clients' own account login, OAuth/device login,
 
 ## Handoff model
 
-A turn runs until the participant process exits. During the turn the participant may write or revise `$CAMPFIRE_HANDOFF`.
+A turn runs until the participant process exits. The controller reads `workspace/.campfire/next` and sends every byte after its first line as the selected CLI's prompt. The first line is only the recipient name. During the turn the participant writes or revises `$CAMPFIRE_HANDOFF` in the same format:
 
 ```text
-To: gemini
-
+gemini
 Natural-language handoff message.
 ```
 
-The handoff becomes effective only after process exit. Self-handoffs are rejected.
+The handoff becomes effective only after process exit. The controller archives it and copies it to `.campfire/next` for the next turn or a later run. Self-handoffs and empty message bodies are rejected. Put standing behavior in `AGENTS.md`; the adapters add no instructions to the handoff text.
 
 ## Temporary unavailability
 
@@ -140,14 +139,13 @@ Native session references:
 ## Configuration
 
 ```text
-CAMPFIRE_INITIAL_AGENT=
 CAMPFIRE_MAX_TURNS=6
 CAMPFIRE_TURN_TIMEOUT=1800
 CAMPFIRE_UNAVAILABLE_POLICY=wait
 CAMPFIRE_WAIT_SECONDS=900
 ```
 
-`CAMPFIRE_MAX_TURNS` controls the maximum number of turns. Set it to `0` or `-1` to run indefinitely until the container is stopped. Any positive value limits the experiment to that many turns.\n\nThe primary turn remains sequential: one participant owns the shared home at a time.
+The first line of `workspace/.campfire/next` selects the initial participant. `CAMPFIRE_MAX_TURNS` controls the maximum number of turns. Set it to `0` or `-1` to run indefinitely until the container is stopped. Any positive value limits the experiment to that many turns. The primary turn remains sequential: one participant owns the shared home at a time.
 
 ## Optional in-turn communication
 
@@ -162,7 +160,7 @@ The shorthand is **message = know this, ask = help me, handoff = take over**.
 
 Self-calls are rejected. Temporary assistants receive communication disabled, cannot hand off, and are instructed not to modify the shared workspace. This prevents recursive agent trees while keeping the primary participant in control.
 
-Queued `message` items and the previous handoff are injected into the recipient's next fresh primary session. Every normal Campfire turn remains a fresh native CLI session; native session history is retained only for observability.
+Queued `message` items remain as files under `~/.campfire/inbox/<participant>/`, which `AGENTS.md` tells participants to inspect. The incoming handoff body is the complete prompt for the next fresh native CLI session; native session history is retained only for observability.
 
 The MCP implementation lives under `mcp/`, with provider-neutral semantics kept separate from individual CLI adapters. At startup Campfire toggles its own MCP entry using each client's native configuration: Codex via `$CODEX_HOME/config.toml`, Claude Code via `--mcp-config`, Gemini via `~/.gemini/settings.json`, Grok via `$GROK_HOME/config.toml`, Muse via `$XDG_CONFIG_HOME/muse/settings.json`, and Kimi via `$KIMI_CODE_HOME/mcp.json`.
 
@@ -177,7 +175,7 @@ The repository does not use a root `AGENTS.md` for Campfire's runtime participan
 templates/INTERNAL_AGENT_INSTRUCTIONS.md
 ```
 
-The image stores it under `/opt/campfire/templates/`, and the controller materializes it as `~/AGENTS.md` inside the experimental home because that is the conventional filename understood by agent CLIs. This avoids confusing repository-wide development instructions with instructions given to research participants.
+The image stores it under `/opt/campfire/templates/`, and the controller materializes it as `~/AGENTS.md` inside the experimental home. `~/CLAUDE.md` and `~/GEMINI.md` are links to that same file so those CLIs load the shared rules. This avoids confusing repository-wide development instructions with instructions given to research participants.
 
 
 ## Roadmap

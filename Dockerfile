@@ -45,6 +45,7 @@ COPY mcp/server.mjs /opt/campfire/mcp/server.mjs
 COPY mcp/providers/ /opt/campfire/mcp/providers/
 COPY templates/INTERNAL_AGENT_INSTRUCTIONS.md /opt/campfire/templates/INTERNAL_AGENT_INSTRUCTIONS.md
 COPY research/README.md /opt/campfire/defaults/README.md
+COPY research/START.md /opt/campfire/defaults/START.md
 COPY bin/campfire-agents /usr/local/bin/campfire-agents
 COPY bin/campfire-assist /usr/local/bin/campfire-assist
 COPY bin/campfire-configure-mcp /usr/local/bin/campfire-configure-mcp
@@ -54,7 +55,7 @@ RUN chmod 0555 /opt/campfire/lib.sh /opt/campfire/gemini-auth-status.cjs /opt/ca
         /usr/local/bin/campfire-agents /usr/local/bin/campfire-assist \
         /usr/local/bin/campfire-configure-mcp /usr/local/bin/campfire-controller \
     && chmod 0444 /opt/campfire/templates/INTERNAL_AGENT_INSTRUCTIONS.md \
-        /opt/campfire/defaults/README.md /opt/campfire/mcp/providers/*
+        /opt/campfire/defaults/README.md /opt/campfire/defaults/START.md /opt/campfire/mcp/providers/*
 
 USER campfire
 WORKDIR /home/campfire

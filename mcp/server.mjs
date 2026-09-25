@@ -73,7 +73,7 @@ server.tool("handoff", "Set or replace the outgoing handoff. It becomes effectiv
   participant: z.string(), message: z.string().min(1)
 }, async ({ participant, message }) => {
   assertTarget(participant);
-  fs.writeFileSync(handoff, `To: ${participant}\n\n${message}\n`);
+  fs.writeFileSync(handoff, `${participant}\n${message}`);
   log("HANDOFF", participant);
   return { content: [{ type: "text", text: `Handoff prepared for ${participant}; it takes effect when this turn exits.` }] };
 });

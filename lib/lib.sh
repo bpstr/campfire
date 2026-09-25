@@ -72,7 +72,21 @@ log_event() {
   printf '}\n' >> /var/log/campfire/events.jsonl
 }
 
-handoff_target() { sed -nE 's/^[[:space:]]*To:[[:space:]]*([A-Za-z0-9_-]+)[[:space:]]*$/\1/p' "$1" | head -n1 | tr '[:upper:]' '[:lower:]'; }
+handoff_target() {
+  local name=''
+  IFS= read -r name < "$1" || [[ -n "$name" ]] || return 1
+  [[ "$name" =~ ^[A-Za-z0-9_-]+$ ]] || return 1
+  printf '%s\n' "$name" | tr '[:upper:]' '[:lower:]'
+}
+handoff_has_body() { awk 'NR > 1 && /[^[:space:]]/ { found=1 } END { exit !found }' "$1"; }
+# The sentinel preserves trailing newlines through Bash command substitution.
+handoff_prompt() {
+  tail -n +2 "$1" || return 1
+  printf '\037'
+}
+handoff_retarget() {
+  { printf '%s\n' "$2"; tail -n +2 "$1"; } > "$3"
+}
 choose_first_available() {
   local exclude="${1:-}" name adapter
   while IFS='|' read -r name adapter; do
