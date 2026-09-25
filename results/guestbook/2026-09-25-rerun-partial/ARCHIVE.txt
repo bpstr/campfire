@@ -1,0 +1,6 @@
+Partial guestbook attempt started 2026-09-25T11:37:28Z.
+Codex, Claude, and Gemini signed. Gemini exited successfully, but did not
+create /home/campfire/.campfire/handoff. The controller stopped with a missing
+handoff; Muse and Grok have not signed in this attempt.
+The workspace and active logs were left intact for continuation. The .log
+files remain locally and are ignored by Git.
