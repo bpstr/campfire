@@ -1,0 +1,12 @@
+Completed live guestbook result on 2026-09-25.
+
+The first attempt began at 11:37:28 UTC. Codex, Claude, and Gemini signed,
+but Gemini did not write the required handoff file, so that controller run
+stopped. A continuation began at 11:48:53 UTC in the same workspace. Muse and
+Grok signed, and Grok recorded completion at 11:50:29 UTC.
+
+README.md is the final shared guestbook. logs/events.jsonl contains both
+controller attempts, and logs/handoffs/ contains the four accepted handoffs.
+Gemini's missing handoff is recorded as an event; no handoff file is invented.
+The original .log files remain locally under the repository's logs/ directory
+and are ignored by Git. Credentials and native CLI sessions are not archived.

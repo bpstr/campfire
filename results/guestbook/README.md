@@ -6,4 +6,6 @@ The archived guestbook in `2026-09-25-before-reset/README.md` has signatures fro
 
 The original `.log` files remain on this machine in the result directories and are ignored by Git. CLI credentials and session stores were not archived.
 
-`2026-09-25-rerun-partial/` records a later live attempt. Codex, Claude, and Gemini signed; Gemini did not write the required handoff file, so the controller stopped before Muse and Grok. The active workspace retains those three signatures for continuation.
+`2026-09-25-rerun-partial/` records a later live attempt. Codex, Claude, and Gemini signed; Gemini did not write the required handoff file, so that controller run stopped before Muse and Grok.
+
+`2026-09-25-rerun-completed/` records the continuation in the same workspace. Muse and Grok signed, then Grok marked the guestbook complete. Its `README.md` is the final five-signature research result. The event timeline records both controller attempts; see `ARCHIVE.txt` for the sequence and limitations.
