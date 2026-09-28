@@ -2,6 +2,7 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { z } from "zod";
+import { registerA2ATools } from "./a2a.mjs";
 import fs from "node:fs";
 import path from "node:path";
 import { spawn, spawnSync } from "node:child_process";
@@ -91,6 +92,10 @@ server.tool("ask", "Ask another participant to work in a fresh temporary session
     log("ASK", participant, "state=FAILED");
     throw err;
   }
+});
+
+registerA2ATools(server, z, {
+  record: ({ agent, ...event }) => log("A2A", agent, JSON.stringify(event))
 });
 
 await server.connect(new StdioServerTransport());

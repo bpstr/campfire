@@ -42,6 +42,7 @@ COPY lib/gemini-auth-status.cjs /opt/campfire/gemini-auth-status.cjs
 COPY lib/gemini-output.cjs /opt/campfire/gemini-output.cjs
 COPY agents/ /opt/campfire/agents/
 COPY mcp/server.mjs /opt/campfire/mcp/server.mjs
+COPY mcp/a2a.mjs /opt/campfire/mcp/a2a.mjs
 COPY mcp/providers/ /opt/campfire/mcp/providers/
 COPY templates/INTERNAL_AGENT_INSTRUCTIONS.md /opt/campfire/templates/INTERNAL_AGENT_INSTRUCTIONS.md
 COPY research/README.md /opt/campfire/defaults/README.md

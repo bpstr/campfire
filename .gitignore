@@ -6,3 +6,4 @@ results/**/workspace/.*
 results/**/workspace/AGENTS.md
 .codanna/
 .codannaignore
+/a2a-agents.json

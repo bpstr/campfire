@@ -1,3 +1,17 @@
 [mcp_servers.campfire]
 command = "node"
 args = ["/opt/campfire/mcp/server.mjs"]
+# Codex filters the stdio server environment; forward runtime controls explicitly.
+env_vars = [
+  "CAMPFIRE_COMMUNICATION_ENABLED",
+  "CAMPFIRE_A2A_ENABLED",
+  "CAMPFIRE_A2A_AGENTS_FILE",
+  "CAMPFIRE_A2A_REQUEST_TIMEOUT_MS",
+  "CAMPFIRE_CURRENT_AGENT",
+  "CAMPFIRE_ASSISTANT_MODE",
+  "CAMPFIRE_RUN_ID",
+  "CAMPFIRE_STATE_DIR",
+  "CAMPFIRE_HANDOFF",
+  "CAMPFIRE_ASK_TIMEOUT",
+  "CAMPFIRE_MANUALLY_VERIFIED_AGENTS"
+]

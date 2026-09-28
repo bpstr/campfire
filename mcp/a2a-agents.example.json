@@ -1,0 +1,6 @@
+{
+  "reviewer": {
+    "cardUrl": "https://reviewer.example/.well-known/agent-card.json",
+    "bearerTokenFile": "/run/secrets/a2a-reviewer-token"
+  }
+}
